@@ -7,12 +7,21 @@ RandomGenerateOneFile()
 '''
 
 from PIL import Image, ImageFont, ImageDraw
+import numpy as np
+
+def PaintPoint(image, points=[]):
+    im = image.copy()
+    bgdr = ImageDraw.Draw(im)
+    for y, x in points:
+        bgdr.ellipse((x-3, y-3, x+3, y+3), fill ="blue", outline ='blue')
+    return im
+
 def Paint2File(contents, fn):
     '''
     contents = [(起始位置x,起始位置y,旋转角度,汉字), ]
     '''    
     background = Image.new("RGBA", (400, 88), (255,255,255,255))
-    #bgdr = ImageDraw.Draw(background)
+    
     font = ImageFont.truetype("./Kaiti-SC-Bold.ttf", 72)
     
     for c in contents:
@@ -25,10 +34,11 @@ def Paint2File(contents, fn):
         dr = ImageDraw.Draw(im)
         dr.text((0, 0), character, font=font, fill="#000000")
         
-        #bgdr.ellipse((c[4]-3, c[5]-3, c[4]+3, c[5]+3), fill ="blue", outline ='blue')
         
         fore = im.rotate(angle, expand=1);
         background.paste(fore, (axis_x, axis_y), fore)
+        
+    #uncomment to save to file
     #background.save(fn)
     return background
 
@@ -65,7 +75,7 @@ def RandomGenerateOneFile():
         height = fabs( sin(rad) * 72 ) + fabs( cos(rad) * 82 )
         width  = fabs( sin(rad) * 82 ) + fabs( cos(rad) * 72 )
         
-        x = i * 54 + randint(-11, 11)
+        x = i * 54 + randint(-9, 9)
         
         rg = int((88 - height)/2)
         y = randint(rg-3, rg+3)
@@ -76,30 +86,36 @@ def RandomGenerateOneFile():
         
         c = (x, y, angle, character, centerX, centerY, f)
         l.append(c)
-    return Paint2File(l, './training_set/' + '_'.join([  str(int(i[4]))  +'-'+  str(int(i[5]))  +'-'+  str(int(i[6]))  for i in l]) + '.png'), l
+    return Paint2File(l, '_'.join([  str(int(i[4]))  +'-'+  str(int(i[5]))  +'-'+  str(int(i[6]))  for i in l]) + '.png'), l
 
 '''
 ************************************************************************
 Training()
 '''
 
+
 def showAscii(x):
     import sys
     for i in x:
         for j in i:
+            #if j > 0:
             if j > 200:
                 sys.stdout.write('+')
             else:
-                sys.stdout.write('-')
+                sys.stdout.write(' ')
         print
-        
-def img2vec(im, x, y, width=400, height=88, radius=20):
-    import numpy as np
-    
+
+def vecCut(x1, center_x , center_y, radius = 20):
+    return x1[center_y - radius:center_y + radius, center_x - radius:center_x + radius]
+
+def centerExtend(im, width=400, height=88, radius=20):
     x1 = np.full((height+radius+radius, width+radius+radius), 255, dtype='uint8')
     x2 = np.asarray(im.convert('L'))
     x1[radius:radius+height,radius:radius+width] = x2
-    return x1[y:y+radius+radius, x:x+radius+radius]
+    return x1;
+                 
+def img2vec(im, width=400, height=88, radius=20):
+    return np.asarray(im.convert('L'));
 
 import scipy.ndimage
 
@@ -111,6 +127,7 @@ def Seven(ret):
         #showAscii(r)
         yield r, i[6]
 
+'''
 def Training():
     from pybrain.supervised.trainers import BackpropTrainer
     from pybrain.tools.shortcuts import buildNetwork
@@ -132,6 +149,7 @@ def Training():
 
     import pickle
     pickle.dump( net, open( "net.p", "wb" ) )
+'''
 
 if __name__ == '__main__':
     RandomGenerateOneFile()
