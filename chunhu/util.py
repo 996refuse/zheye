@@ -9,6 +9,9 @@ RandomGenerateOneFile()
 from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 
+def crop(im, y, x, radius = 20):
+    return im.crop((x-radius, y-radius, x+radius, y+radius))
+
 def PaintPoint(image, points=[]):
     im = image.copy()
     bgdr = ImageDraw.Draw(im)
@@ -112,7 +115,8 @@ def centerExtend(im, width=400, height=88, radius=20):
     x1 = np.full((height+radius+radius, width+radius+radius), 255, dtype='uint8')
     x2 = np.asarray(im.convert('L'))
     x1[radius:radius+height,radius:radius+width] = x2
-    return x1;
+    return Image.fromarray(x1, 'L')
+     
                  
 def img2vec(im, width=400, height=88, radius=20):
     return np.asarray(im.convert('L'));
