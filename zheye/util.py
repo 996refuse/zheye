@@ -1,14 +1,78 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-'''
-************************************************************************
-RandomGenerateOneFile()
-'''
+
+
 
 from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 
+
+import os 
+full_path = os.path.realpath(__file__)
+path, filename = os.path.split(full_path)
+
+from sklearn.cluster import KMeans
+import keras
+model = keras.models.load_model(path +'/zheye.keras')
+'''
+************************************************************************
+Recognizing...
+'''
+def Recognizing(filename):
+    im = Image.open(filename)
+    im = centerExtend(im, radius=20)
+    
+    #get center positions
+    vec = img2vec(im).copy()
+    for i in range(vec.shape[0]):
+        for j in range(vec.shape[1]):
+            if vec[i][j] >= 249:
+                vec[i][j] = 255
+                
+    Y = []
+    for i in range(vec.shape[0]):
+        for j in range(vec.shape[1]):
+            if vec[i][j] <= 200:
+                Y.append([i, j])
+    k_means = KMeans(init='k-means++', n_clusters=7, n_init=10)
+    k_means.fit(Y)
+    k_means_cluster_centers = np.sort(k_means.cluster_centers_, axis=0)
+    
+    
+    #predict UP DOWN
+    points = []
+    #model = keras.models.load_model('./zheye.keras')
+    for i in range(7):
+        p_x = k_means_cluster_centers[i][0]
+        p_y = k_means_cluster_centers[i][1]
+
+        cr = crop(im, p_x, p_y, radius=20)
+        cr = cr.resize((40, 40), Image.ANTIALIAS)
+
+        #X = np.asarray(cr.convert('1'), dtype='float')
+        X = np.asarray(cr.convert('L'), dtype='float')
+
+        #X = X.ravel()
+        for (x,y), value in np.ndenumerate(X):
+            if value > 200:
+                X[x][y] = 1.0
+            else:
+                X[x][y] = 0.0
+
+        x0 = np.expand_dims(X, axis=0)
+        x1 = np.expand_dims(x0, axis=3)
+        m_y = model.predict(x1)
+        if m_y[0][0] < 0.5:
+            points.append((p_x-20, p_y-20))
+    return points
+
+
+
+'''
+************************************************************************
+RandomGenerateOneFile()
+'''
 def crop(im, y, x, radius = 20):
     return im.crop((x-radius, y-radius, x+radius, y+radius))
 
@@ -16,7 +80,7 @@ def PaintPoint(image, points=[]):
     im = image.copy()
     bgdr = ImageDraw.Draw(im)
     for y, x in points:
-        bgdr.ellipse((x-3, y-3, x+3, y+3), fill ="blue", outline ='blue')
+        bgdr.ellipse((x-3, y-3, x+3, y+3), fill ="red", outline ='red')
     return im
 
 def Paint2File(contents, fn):
@@ -78,7 +142,7 @@ def RandomGenerateOneFile():
         height = fabs( sin(rad) * 72 ) + fabs( cos(rad) * 82 )
         width  = fabs( sin(rad) * 82 ) + fabs( cos(rad) * 72 )
         
-        x = i * 54 + randint(-9, 9)
+        x = i * 54 + randint(-3, 3)
         
         rg = int((88 - height)/2)
         y = randint(rg-3, rg+3)
@@ -131,29 +195,7 @@ def Seven(ret):
         #showAscii(r)
         yield r, i[6]
 
-'''
-def Training():
-    from pybrain.supervised.trainers import BackpropTrainer
-    from pybrain.tools.shortcuts import buildNetwork
-    net = buildNetwork(400, 600, 30, 1, bias=True)
-
-    from pybrain.datasets import SupervisedDataSet
-    DS = SupervisedDataSet(400, 1)
-
-    for uuid in range(1000):
-        ret = RandomGenerateOneFile()
-        for i in Seven(ret):
-            #showAscii(i[0]),
-            #print i[1]
-            DS.appendLinked( [0 if x < 200 else 1 for x in i[0].ravel().tolist()], [i[1]] )
-
-    trainer = BackpropTrainer(net, DS)
-
-    trainer.trainUntilConvergence(maxEpochs=30)
-
-    import pickle
-    pickle.dump( net, open( "net.p", "wb" ) )
-'''
-
 if __name__ == '__main__':
     RandomGenerateOneFile()
+
+
