@@ -5,7 +5,7 @@
 知乎新用户注册会要求识别一个古怪的验证码
 https://www.zhihu.com/captcha.gif?r=1464247559114&type=login&lang=cn
 
-此项目利用卷及神经网络识别验证码
+此项目利用卷积神经网络识别验证码
 
 在线测试地址 http://zheye.shidaixin.com
 
