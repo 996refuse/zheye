@@ -3,7 +3,10 @@
 # 者也 - 知乎汉字验证码识别程序
 
 知乎新用户注册会要求识别一个古怪的验证码
-https://www.zhihu.com/captcha.gif?r=1464247559114&type=login&lang=cn
+
+![image](https://raw.githubusercontent.com/muchrooms/zheye/master/zhihu.png)
+
+下载地址: https://www.zhihu.com/captcha.gif?r=1464247559114&type=login&lang=cn
 
 此项目利用卷积神经网络识别验证码
 
