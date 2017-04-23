@@ -8,13 +8,13 @@ from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 
 
-import os 
-full_path = os.path.realpath(__file__)
-path, filename = os.path.split(full_path)
+#import os 
+#full_path = os.path.realpath(__file__)
+#path, filename = os.path.split(full_path)
 
-from sklearn.cluster import KMeans
-import keras
-model = keras.models.load_model(path +'/zheye.keras')
+#from sklearn.cluster import KMeans
+#import keras
+#model = keras.models.load_model(path +'/zheye.keras')
 '''
 ************************************************************************
 Recognizing...
@@ -73,9 +73,6 @@ def Recognizing(filename):
 ************************************************************************
 RandomGenerateOneFile()
 '''
-def crop(im, y, x, radius = 20):
-    return im.crop((x-radius, y-radius, x+radius, y+radius))
-
 def PaintPoint(image, points=[]):
     im = image.copy()
     bgdr = ImageDraw.Draw(im)
@@ -83,6 +80,52 @@ def PaintPoint(image, points=[]):
         bgdr.ellipse((x-3, y-3, x+3, y+3), fill ="red", outline ='red')
     return im
 
+def crop(im, y, x, radius = 20):
+    return im.crop((x-radius, y-radius, x+radius, y+radius))
+
+def RandomGenerateOneChar(y=None, character=None, radius=20):
+    '''
+    y == 1 汉字正
+    y ==-1 汉字倒
+    radius < 50
+    '''
+    choices = range(-30, 30) + range(-180, -150) + range(150, 180)
+    
+    angle = choice(choices)
+    if y != None:
+        while (angle <= 30 and angle >= -30) == (y == -1):
+            angle = choice(choices)
+    else:
+        y = -1
+        if angle <= 30 and angle >= -30:
+            y = 1
+    
+    rad = radians(angle)
+    #height = fabs( sin(rad) * 72 ) + fabs( cos(rad) * 82 )
+    #width  = fabs( sin(rad) * 82 ) + fabs( cos(rad) * 72 )
+    
+    if character == None:
+        character = randomGB2312()
+
+    background = Image.new("RGBA", (160, 160), (255,255,255,255))
+    
+    im = Image.new("RGBA", (72, 82), (0, 0, 0, 0))
+    font = ImageFont.truetype("./Kaiti-SC-Bold.ttf", 72)
+    
+    dr = ImageDraw.Draw(im)
+    dr.fontmode = "1"
+    dr.text((0, 0), character, font=font, fill="#000000")
+    
+    fore = im.rotate(angle, expand=1)
+    width, height = fore.size
+    
+    scale = np.random.uniform(0.9, 1.5)
+    fore = fore.resize((int(width *scale), int(height*scale)), Image.ANTIALIAS)
+    width, height = fore.size
+    
+    background.paste(fore, (80 - width/2 + randint(-10, 10), 80 -10*y - height/2 + randint(-10, 10)), fore)
+    return background.crop((80-radius, 80-radius, 80+radius, 80+radius))
+    
 def Paint2File(contents, fn):
     '''
     contents = [(起始位置x,起始位置y,旋转角度,汉字), ]
@@ -127,6 +170,7 @@ def randomGB2312():
     except:
         return randomGB2312()
 
+    
 def RandomGenerateOneFile():
     choices = range(-20, 20) + range(-180, -160) + range(160, 180)
 
