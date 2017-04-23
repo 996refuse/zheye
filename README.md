@@ -15,7 +15,7 @@ from zheye import util
 util.Recognizing('./captcha.gif')
 ```
 
-正确率80%左右,欢迎指教,欢迎任何批评建议
+正确率90%左右,欢迎指教,欢迎任何批评建议
 
 # WTFPL
 
