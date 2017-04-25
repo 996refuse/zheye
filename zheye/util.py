@@ -1,138 +1,86 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-
-
-
 from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 
+import os 
+full_path = os.path.realpath(__file__)
+path, filename = os.path.split(full_path)
 
-#import os 
-#full_path = os.path.realpath(__file__)
-#path, filename = os.path.split(full_path)
-
-#from sklearn.cluster import KMeans
-#import keras
-#model = keras.models.load_model(path +'/zheye.keras')
+from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
+import keras
+model = keras.models.load_model(path +'/zheyeV3.keras')
+#model = keras.models.load_model(path +'/zheye2.keras')
 '''
 ************************************************************************
 Recognizing...
 '''
-def Recognizing(filename):
-    im = Image.open(filename)
+def Recognizing(fn):
+    im = Image.open(fn)
     im = centerExtend(im, radius=20)
-    
-    #get center positions
+
     vec = img2vec(im).copy()
-    for i in range(vec.shape[0]):
-        for j in range(vec.shape[1]):
-            if vec[i][j] >= 249:
-                vec[i][j] = 255
-                
     Y = []
     for i in range(vec.shape[0]):
         for j in range(vec.shape[1]):
             if vec[i][j] <= 200:
                 Y.append([i, j])
-    k_means = KMeans(init='k-means++', n_clusters=7, n_init=10)
-    k_means.fit(Y)
-    k_means_cluster_centers = np.sort(k_means.cluster_centers_, axis=0)
-    
-    
-    #predict UP DOWN
+
+    gmm = GaussianMixture(n_components=7, covariance_type='tied', reg_covar=1e2, tol=1e3, n_init=9)
+    gmm.fit(Y)
+    k_means_cluster_centers = np.sort(gmm.means_, axis=0)
+
     points = []
-    #model = keras.models.load_model('./zheye.keras')
+
     for i in range(7):
-        p_x = k_means_cluster_centers[i][0]
-        p_y = k_means_cluster_centers[i][1]
+        scoring = 0.0
+        for w_i in range(3):
+            for w_j in range(3):
+                p_x = k_means_cluster_centers[i][0] -1 +w_i
+                p_y = k_means_cluster_centers[i][1] -1 +w_j
 
-        cr = crop(im, p_x, p_y, radius=20)
-        cr = cr.resize((40, 40), Image.ANTIALIAS)
+                cr = crop(im, p_x, p_y, radius=20)
+                cr = cr.resize((40, 40), Image.ANTIALIAS)
 
-        #X = np.asarray(cr.convert('1'), dtype='float')
-        X = np.asarray(cr.convert('L'), dtype='float')
+                X = np.asarray(cr.convert('L'), dtype='float')
+                X = (X.astype("float") - 180) /200
 
-        #X = X.ravel()
-        for (x,y), value in np.ndenumerate(X):
-            if value > 200:
-                X[x][y] = 1.0
-            else:
-                X[x][y] = 0.0
+                x0 = np.expand_dims(X, axis=0)
+                x1 = np.expand_dims(x0, axis=3)
 
-        x0 = np.expand_dims(X, axis=0)
-        x1 = np.expand_dims(x0, axis=3)
-        m_y = model.predict(x1)
-        if m_y[0][0] < 0.5:
-            points.append((p_x-20, p_y-20))
+                global model
+                if model.predict(x1)[0][0] < 0.5:
+                    scoring += 1
+
+        if scoring > 4:
+            points.append((k_means_cluster_centers[i][0], k_means_cluster_centers[i][1]))
     return points
-
-
 
 '''
 ************************************************************************
 RandomGenerateOneFile()
 '''
-def PaintPoint(image, points=[]):
-    im = image.copy()
-    bgdr = ImageDraw.Draw(im)
-    for y, x in points:
-        bgdr.ellipse((x-3, y-3, x+3, y+3), fill ="red", outline ='red')
-    return im
-
 def crop(im, y, x, radius = 20):
     return im.crop((x-radius, y-radius, x+radius, y+radius))
 
-def RandomGenerateOneChar(y=None, character=None, radius=20):
-    '''
-    y == 1 汉字正
-    y ==-1 汉字倒
-    radius < 50
-    '''
-    choices = range(-30, 30) + range(-180, -150) + range(150, 180)
-    
-    angle = choice(choices)
-    if y != None:
-        while (angle <= 30 and angle >= -30) == (y == -1):
-            angle = choice(choices)
-    else:
-        y = -1
-        if angle <= 30 and angle >= -30:
-            y = 1
-    
-    rad = radians(angle)
-    #height = fabs( sin(rad) * 72 ) + fabs( cos(rad) * 82 )
-    #width  = fabs( sin(rad) * 82 ) + fabs( cos(rad) * 72 )
-    
-    if character == None:
-        character = randomGB2312()
+def PaintPoint(image, points=[]):
+    #print(points)
+    im = image.copy()
+    bgdr = ImageDraw.Draw(im)
+    for y, x in points:
+        bgdr.ellipse((x-6, y-6, x+6, y+6), fill ="red", outline ='red')
+    return im
 
-    background = Image.new("RGBA", (160, 160), (255,255,255,255))
-    
-    im = Image.new("RGBA", (72, 82), (0, 0, 0, 0))
-    font = ImageFont.truetype("./Kaiti-SC-Bold.ttf", 72)
-    
-    dr = ImageDraw.Draw(im)
-    dr.fontmode = "1"
-    dr.text((0, 0), character, font=font, fill="#000000")
-    
-    fore = im.rotate(angle, expand=1)
-    width, height = fore.size
-    
-    scale = np.random.uniform(0.9, 1.5)
-    fore = fore.resize((int(width *scale), int(height*scale)), Image.ANTIALIAS)
-    width, height = fore.size
-    
-    background.paste(fore, (80 - width/2 + randint(-10, 10), 80 -10*y - height/2 + randint(-10, 10)), fore)
-    return background.crop((80-radius, 80-radius, 80+radius, 80+radius))
-    
 def Paint2File(contents, fn):
     '''
     contents = [(起始位置x,起始位置y,旋转角度,汉字), ]
     '''    
     background = Image.new("RGBA", (400, 88), (255,255,255,255))
     
-    font = ImageFont.truetype("./Kaiti-SC-Bold.ttf", 72)
+    global path
+    font = ImageFont.truetype(path + "/Kaiti-SC-Bold.ttf", 72)
     
     for c in contents:
         axis_x    = c[0]
@@ -164,18 +112,25 @@ def randomGB2312():
     body = randint(0xA, 0xF)
     tail = randint(0, 0xF)
     val = ( head << 0x8 ) | (body << 0x4 ) | tail
-    str = '%x' % val
+    c = '%x' % val
     try:
-        return str.decode('hex').decode('gb2312')
+        #return str.decode('hex').decode('gb2312')
+        # python3 Compatible
+        return bytes.fromhex(c).decode('gb2312')
     except:
         return randomGB2312()
 
-    
-def RandomGenerateOneFile():
-    choices = range(-20, 20) + range(-180, -160) + range(160, 180)
+def RandomGenerateOneFile(characters=[]):
+    choices = [x for x in range(-20, 20)] + [x for x in range(-180, -160)] + [x for x in range(160, 180)]
 
     l = []
-    for i in range(7):
+    
+    if characters == []:
+        length = 7
+    else:
+        length = len(characters)
+    for i in range(length):
+        
         angle = choice(choices)
         f = 0
         if angle <= 20 and angle >= -20:
@@ -190,7 +145,11 @@ def RandomGenerateOneFile():
         
         rg = int((88 - height)/2)
         y = randint(rg-3, rg+3)
-        character = randomGB2312()
+        
+        if characters == []:
+            character = randomGB2312()
+        else:
+            character = characters[i]
         
         centerX = x + width/2
         centerY = y + height/2
