@@ -55,7 +55,7 @@ def Recognizing(fn):
                     scoring += 1
 
         if scoring > 4:
-            points.append((k_means_cluster_centers[i][0], k_means_cluster_centers[i][1]))
+            points.append((k_means_cluster_centers[i][0] -20, k_means_cluster_centers[i][1] -20))
     return points
 
 '''
