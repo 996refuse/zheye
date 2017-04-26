@@ -12,6 +12,12 @@ https://www.zhihu.com/captcha.gif?type=login&lang=cn
 
 在线测试地址 http://zheye.shidaixin.com
 
+安装依赖
+
+```bash
+pip install -r requirements.txt
+```
+
 使用方法
 
 ```python
