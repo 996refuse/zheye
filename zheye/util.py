@@ -6,6 +6,9 @@ import numpy as np
 from random import randint, choice
 from math import sin, cos, radians, fabs
 
+import os 
+dir_path = os.path.dirname(os.path.realpath(__file__)) 
+
 def crop(im, y, x, radius = 20):
     return im.crop((x-radius, y-radius, x+radius, y+radius))
 
@@ -40,7 +43,8 @@ def RandomGenerateOneChar(y=None, character=None, radius=20):
     background = Image.new("RGBA", (160, 160), (255,255,255,255))
     
     im = Image.new("RGBA", (72, 82), (0, 0, 0, 0))
-    font = ImageFont.truetype("./Kaiti-SC-Bold.ttf", 72)
+    global dir_path
+    font = ImageFont.truetype(dir_path + "/Kaiti-SC-Bold.ttf", 72)
     
     dr = ImageDraw.Draw(im)
     dr.fontmode = "1"
