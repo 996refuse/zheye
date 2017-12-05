@@ -14,7 +14,7 @@ https://www.zhihu.com/captcha.gif?type=login&lang=cn
 * 训练卷积神经网络 keras.ipynb
 * 高斯混合模型切图 GMM.ipynb
 
-在线测试地址 http://zheye.shidaixin.com
+在线测试地址 http://zheye.74ls74.org/
 
 # 如何调用
 
