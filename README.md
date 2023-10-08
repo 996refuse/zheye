@@ -13,9 +13,9 @@ https://www.zhihu.com/captcha.gif?type=login&lang=cn
 * 卷积神经网络
 * 高斯混合模型
 
-# online evaluate
+# ~~online evaluate~~
 
-在线测试地址 http://zheye.74ls74.org/
+~~在线测试地址 http://zheye.74ls74.org/~~
 
 # how to use
 
